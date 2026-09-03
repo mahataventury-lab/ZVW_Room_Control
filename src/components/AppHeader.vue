@@ -3,11 +3,10 @@ import { computed, onMounted, onUnmounted, ref } from 'vue';
 
 const props = defineProps({
   roomId: { type: String, required: true },
-  roomOptions: { type: Array, required: true },
   outsideTemp: { type: Number, default: null },
 });
 
-const emit = defineEmits(['toggle-theme', 'change-room']);
+const emit = defineEmits(['toggle-theme']);
 
 const now = ref(new Date());
 const liveWeatherTemp = ref(null);
@@ -98,14 +97,12 @@ const outsideTempLabel = computed(() => {
     </div>
 
     <!-- 2. Room -->
-    <label class="header-room">
+    <div class="header-room">
       <svg width="21" height="18" viewBox="0 0 21 18" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M0.5,10.77L10.5,0.98L20.5,10.77M4.65,6.72L4.65,17.3L16.32,17.3L16.32,6.72M13.83,8.32L7.16,8.32L7.16,14.86L13.83,14.86L13.83,8.32Z" fill="none" stroke="var(--color-text)" stroke-width="1.42" stroke-miterlimit="10"/>
       </svg>
-      <select :value="roomId" aria-label="Raum auswählen" @change="emit('change-room', $event.target.value)">
-        <option v-for="room in roomOptions" :key="room" :value="room">{{ room }}</option>
-      </select>
-    </label>
+      <span>{{ roomId }}</span>
+    </div>
 
     <!-- 3. Weather -->
     <div class="header-weather">

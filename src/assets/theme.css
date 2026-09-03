@@ -110,7 +110,6 @@ html, body {
   font-weight: 400;
   font-family: "Source Sans 3", "Source Sans Pro", sans-serif;
   letter-spacing: 0.01em;
-  background: var(--bg-ctrl-active);
   padding: 6px 14px;
   color: var(--color-text);
 }

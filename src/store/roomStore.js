@@ -45,6 +45,7 @@ export const useRoomStore = defineStore('room', {
 
     lastMessageAt: null,
     _unsubscribe: null,
+    _unsubscribeCommand: null,
   }),
 
   getters: {
@@ -55,7 +56,7 @@ export const useRoomStore = defineStore('room', {
   },
 
   actions: {
-    /** Wire up MQTT: connect once, subscribe to this room's state topic. */
+    /** Wire up MQTT: connect once, subscribe to this room's state and command topics. */
     init() {
       this._restoreCachedRoomData();
       mqttClient.onStatusChange((status) => {
@@ -67,15 +68,22 @@ export const useRoomStore = defineStore('room', {
       this._unsubscribe = mqttClient.subscribe(this.stateTopic, (payload) => {
         this._applyIncoming(payload);
       });
+
+      // Also subscribe to command topic to see other devices' commands
+      this._unsubscribeCommand = mqttClient.subscribe(this.commandTopic, (payload) => {
+        this._applyCommand(payload);
+      });
     },
 
     teardown() {
       if (this._unsubscribe) this._unsubscribe();
+      if (this._unsubscribeCommand) this._unsubscribeCommand();
     },
 
     changeRoom(roomId) {
       if (!roomId || roomId === this.roomId) return;
       if (this._unsubscribe) this._unsubscribe();
+      if (this._unsubscribeCommand) this._unsubscribeCommand();
 
       this.roomId = roomId;
       this.currentTemp = null;
@@ -94,6 +102,10 @@ export const useRoomStore = defineStore('room', {
 
       this._unsubscribe = mqttClient.subscribe(this.stateTopic, (payload) => {
         this._applyIncoming(payload);
+      });
+
+      this._unsubscribeCommand = mqttClient.subscribe(this.commandTopic, (payload) => {
+        this._applyCommand(payload);
       });
     },
 
@@ -198,6 +210,42 @@ export const useRoomStore = defineStore('room', {
       } catch (error) {
         console.warn('[mqtt] room data cache unavailable', error);
       }
+    },
+
+    /**
+     * Apply incoming command from another device (via command topic).
+     * Ensures multiple devices can see each other's control changes.
+     */
+    _applyCommand(payload) {
+      if (!payload || typeof payload !== 'object') return;
+
+      // Only apply commands for this room
+      if (payload.roomId && payload.roomId !== this.roomId) return;
+
+      // Apply temperature change if present
+      if (payload.targetTemp !== undefined && payload.targetTemp !== null) {
+        this.targetTemp = clamp(Number(payload.targetTemp), TEMP_MIN, TEMP_MAX);
+      }
+
+      // Apply blind changes if present
+      const blindName = String(payload.blind ?? '').toLowerCase();
+      if (blindName === 'upper' || blindName === 'top') {
+        if (payload.blindHeight !== undefined && payload.blindHeight !== null) {
+          this.upperBlind.height = clamp(Number(payload.blindHeight), HEIGHT_MIN, HEIGHT_MAX);
+        }
+        if (payload.blindAngle !== undefined && payload.blindAngle !== null) {
+          this.upperBlind.angle = clamp(Number(payload.blindAngle), ANGLE_MIN, ANGLE_MAX);
+        }
+      } else if (blindName === 'right' || blindName === 'side') {
+        if (payload.blindHeight !== undefined && payload.blindHeight !== null) {
+          this.rightBlind.height = clamp(Number(payload.blindHeight), HEIGHT_MIN, HEIGHT_MAX);
+        }
+        if (payload.blindAngle !== undefined && payload.blindAngle !== null) {
+          this.rightBlind.angle = clamp(Number(payload.blindAngle), ANGLE_MIN, ANGLE_MAX);
+        }
+      }
+
+      this._cacheCurrentRoomData();
     },
 
     _publishControl(patch) {

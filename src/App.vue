@@ -2,7 +2,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useRoomStore } from './store/roomStore.js';
-import { ROOM_OPTIONS, resolveShareUrl } from './config.js';
+import { resolveShareUrl } from './config.js';
 
 import AppHeader from './components/AppHeader.vue';
 import TemperatureCard from './components/TemperatureCard.vue';
@@ -57,9 +57,7 @@ const connLabel = computed(() => ({
     <div class="board" :class="{ light: isLight }">
       <AppHeader
         :room-id="roomId"
-        :room-options="ROOM_OPTIONS"
         :outside-temp="outsideTemp"
-        @change-room="room.changeRoom"
         @toggle-theme="toggleTheme"
       />
 
