@@ -1,0 +1,7 @@
+services:
+  zvw-room-control:
+    image: tanmantan/zvw-room-control:latest
+    container_name: zvw-room-control
+    restart: unless-stopped
+    ports:
+      - "8080:80"
